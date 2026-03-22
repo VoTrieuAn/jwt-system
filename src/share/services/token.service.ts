@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { JwtPayload, JwtTokens } from '../types/jwt.type';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtPayload, JwtTokens } from '../entities/jwt.entity';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -29,5 +29,31 @@ export class TokenService {
       this.signRefreshToken(payload),
     ]);
     return { accessToken, refreshToken };
+  }
+
+  async verifyRefreshToken(token: string): Promise<JwtPayload> {
+    try {
+      const decoded: JwtPayload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.REFRESH_TOKEN_SECRET,
+        algorithms: ['HS256'],
+      });
+      return decoded;
+    } catch (error) {
+      console.log(error);
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async verifyAccessToken(token: string): Promise<JwtPayload> {
+    try {
+      const decoded: JwtPayload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.ACCESS_TOKEN_SECRET,
+        algorithms: ['HS256'],
+      });
+      return decoded;
+    } catch (error) {
+      console.log(error);
+      throw new UnauthorizedException('Invalid access token');
+    }
   }
 }

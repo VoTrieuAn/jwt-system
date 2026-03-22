@@ -1,4 +1,4 @@
-import { JwtTokens } from 'src/share/types/jwt.type';
+import { JwtTokens } from 'src/share/entities/jwt.entity';
 
 export class RegisterVo {
   data: {

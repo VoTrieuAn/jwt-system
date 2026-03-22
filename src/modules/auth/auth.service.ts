@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { PrismaService } from 'src/share/services/prisma.service';
 import { HashingService } from 'src/share/services/hashing.service';
@@ -6,6 +6,8 @@ import { RegisterVo } from './vo/register.vo';
 import { TokenService } from 'src/share/services/token.service';
 import { LoginDto } from './dto/login.dto';
 import { LoginVo } from './vo/login.vo';
+import { RefreshTokenVo } from './vo/refresh-token.vo';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -90,6 +92,36 @@ export class AuthService {
     } catch (error) {
       console.log(error);
       throw new BadRequestException('Invalid email or password');
+    }
+  }
+
+  async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<RefreshTokenVo> {
+    try {
+      // 1. Kiểm tra token có hợp lệ không
+      const { refreshToken } = refreshTokenDto;
+      const decoded = await this.tokenService.verifyRefreshToken(refreshToken);
+
+      // 2. Kiểm tra user có tồn tại không
+      const userExists = await this.prismaService.user.findUnique({
+        where: { id: decoded.userId },
+      });
+
+      if (!userExists) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // 3. Tạo mới access token và refresh token, nếu user tồn tại
+      const tokens = await this.tokenService.generateTokens({
+        userId: userExists.id,
+      });
+
+      return new RefreshTokenVo({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      });
+    } catch (error) {
+      console.log(error);
+      throw new UnauthorizedException('Invalid refresh token');
     }
   }
 }

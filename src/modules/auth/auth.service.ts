@@ -18,46 +18,41 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<RegisterVo> {
-    try {
-      const { email, password, confirmPassword, name } = registerDto;
+    const { email, password, confirmPassword, name } = registerDto;
 
-      if (password !== confirmPassword) {
-        throw new BadRequestException('Password and confirm password do not match');
-      }
+    // if (password !== confirmPassword) {
+    //   throw new BadRequestException('Password and confirm password do not match');
+    // }
 
-      const userExists = await this.prismaService.user.findFirst({ where: { email } });
+    const userExists = await this.prismaService.user.findUnique({ where: { email } });
 
-      if (userExists) {
-        throw new BadRequestException('Email already exists');
-      }
-
-      const hashedPassword = await this.hashingService.hashPassword(password);
-
-      const user = await this.prismaService.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name,
-        },
-      });
-
-      const tokens = await this.tokenService.generateTokens({
-        userId: user.id,
-      });
-
-      return new RegisterVo({
-        data: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
-        message: 'User registered successfully',
-        tokens,
-      });
-    } catch (error) {
-      console.log(error);
-      throw new BadRequestException('Registration failed');
+    if (userExists) {
+      throw new BadRequestException('Email already exists');
     }
+
+    const hashedPassword = await this.hashingService.hashPassword(password);
+
+    const user = await this.prismaService.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+      },
+    });
+
+    const tokens = await this.tokenService.generateTokens({
+      userId: user.id,
+    });
+
+    return new RegisterVo({
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+      message: 'User registered successfully',
+      tokens,
+    });
   }
 
   async login(loginDto: LoginDto): Promise<LoginVo> {

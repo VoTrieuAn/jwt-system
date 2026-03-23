@@ -22,21 +22,21 @@ export class AuthenticationGuard implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext) {
+    // Lấy metadata từ decorator @Auth, ưu tiên lấy từ handler trước, nếu không có thì lấy từ class
     const authGuardValue = this.reflector.getAllAndOverride<AuthGuardPayloadType | undefined>(AUTH_TYPE_KEY, [
       context.getHandler(),
       context.getClass(),
     ]) ?? { authTypes: [AuthKind.None], condition: ConditionGuard.And };
 
-    console.log({ authGuardValue });
-
     // Nếu không có metadata nào được chỉ định, cho phép truy cập
     if (!authGuardValue) return true;
 
-    const guards = authGuardValue.authTypes.map((type: string) => this.authTypeGuardMap[type]).filter(Boolean);
+    const guards = authGuardValue.authTypes
+      .map((type: string) => this.authTypeGuardMap[type])
+      // Lọc ra các instance guard (AccessTokenGuard | ApiKeyGuard) không hợp lệ (ví dụ: nếu có loại auth không được định nghĩa trong authTypeGuardMap)
+      .filter(Boolean);
 
-    console.log({ guards });
-
-    // Nếu không có guard nào được chỉ định, cho phép truy cập
+    // Nếu không có guard nào được chỉ định, cho phép truy cập vì không có điều kiện nào để kiểm tra
     if (!guards.length) return true;
 
     return authGuardValue.condition === ConditionGuard.And
@@ -48,6 +48,8 @@ export class AuthenticationGuard implements CanActivate {
     // Trong điều kiện AND, tất cả các guard phải trả về true. Nếu bất kỳ guard nào trả về false hoặc ném lỗi, sẽ ném lỗi ngay lập tức.
     for (const guard of guards) {
       await guard.canActivate(context);
+      console.log({ context });
+      console.log('Đây là: ', await guard.canActivate(context));
     }
 
     return true;

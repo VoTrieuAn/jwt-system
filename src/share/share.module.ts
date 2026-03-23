@@ -6,6 +6,7 @@ import { TokenService } from './services/token.service';
 import { AccessTokenGuard } from './guards/access-token.guard';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { AuthenticationGuard } from './guards/authentication.guard';
+import { ConfigModule } from '@nestjs/config';
 
 const SHARE_SERVICES = [PrismaService, HashingService, TokenService];
 
